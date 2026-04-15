@@ -7,6 +7,9 @@
 **Lesson 2 — Transformations**
 `lesson2_task1_translation.py`, `lesson2_task2_scaling.py`, `lesson2_task3_rotation.py`, `lesson2_task4_camera.py`, `lesson2_cube.py`
 
+**Lesson 3 — Materials, Lighting & Animation**
+`lesson3_task1_color.py`, `lesson3_task2_shininess.py`, `lesson3_task3_light_move.py`, `lesson3_task4_matte.py`, `lesson3_task5_camera.py`, `lesson3_task6_speed.py`
+
 ## Run
 
 ```bash
