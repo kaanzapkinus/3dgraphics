@@ -84,15 +84,10 @@ Optional / stretch goals:
 
 ## How it will be delivered
 
-The repository will contain:
-- `final_project/solar_system.py` — the bpy script
-- `final_project/README.md` — one-page run instructions for Blender
-- `final_project/render.png` — sample rendered output
-
-Running it locally:
+Running the project locally:
 
 ```text
-1. Open Blender
+1. Open Blender (version 4.x)
 2. Switch to the Scripting workspace
 3. Open solar_system.py
 4. Click "Run Script"
@@ -100,8 +95,26 @@ Running it locally:
 
 …and the rendered image is written next to the script.
 
-## Submission plan
+## Submission package
 
-I will develop the script at home over the next weeks and bring the
-finished version to the professor for review during the examination
-period (last two weeks of June).
+Per the Moodle upload requirements, the final deliverable will be a
+single zip file containing:
+
+| File | Purpose |
+|------|---------|
+| `solar_system.py`   | The full `bpy` script — the project itself |
+| `presentation.pptx` | 10–15 slide deck covering concept, code highlights, results |
+| `render.png`        | Sample render produced by the script |
+| `README.md`         | Short run instructions for Blender |
+
+This zip will be uploaded to the Moodle final project slot.
+
+## Timeline
+
+| Milestone | Target |
+|-----------|--------|
+| Topic approval from the professor | After this proposal email |
+| Script prototype (sun + planets + lighting) | within ~1 week of approval |
+| Animation + camera + final render | following week |
+| Presentation slides + sample render | last week before submission |
+| Upload zip + (if required) in-person demo | last two weeks of June, during exam period |
