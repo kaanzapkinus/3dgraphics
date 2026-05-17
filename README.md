@@ -13,6 +13,11 @@
 **Lesson 4 — Mesh, Voxel & Analytical**
 `lesson4_task1_box.py`, `lesson4_task2_extraface.py`, `lesson4_task3_voxelres.py`, `lesson4_task4_voxelcube.py`, `lesson4_task5_ellipsoid.py`
 
+## Final Project
+
+Procedural Solar System (Blender + Python / `bpy`) — proposal & roadmap in [FINAL_PROJECT.md](FINAL_PROJECT.md).
+Waiting for the professor's approval before implementation.
+
 ## Run
 
 ```bash
