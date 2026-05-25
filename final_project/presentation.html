@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procedural Solar System — Final Project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:          #05060c;
+  --bg-soft:     #0a0c18;
+  --ink:         #e8e6e0;
+  --ink-soft:    #aaa8a0;
+  --muted:       #6f6d68;
+  --accent:      #ffb347;
+  --accent-deep: #e08a2e;
+  --gold:        #f4d35e;
+  --blue:        #5b9eff;
+  --line:        rgba(232, 230, 224, 0.18);
+  --line-strong: rgba(232, 230, 224, 0.45);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 400;
+  line-height: 1.75;
+  font-size: 18px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Three.js canvas as a fixed background ────────── */
+#scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Strong vignette so the busy starry scene doesn't compete with text */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(5,6,12,0.30) 0%, rgba(5,6,12,0.78) 70%, rgba(5,6,12,0.92) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ─── Language switcher ─────────────────────────── */
+.lang-switch {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  gap: 0;
+  background: var(--ink);
+  padding: 4px;
+  border-radius: 100px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.lang-switch button {
+  background: transparent;
+  border: none;
+  color: var(--bg);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.lang-switch button.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Hide the opposite-language nodes (set via JS) */
+[data-lang="en"] .lang-tr,
+[data-lang="tr"] .lang-en { display: none; }
+
+/* Progress bar — top */
+.progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold), var(--accent));
+  z-index: 99;
+  transition: width 0.1s linear;
+}
+
+/* ─── Hero ─────────────────────────── */
+.hero {
+  position: relative;
+  z-index: 2;
+  padding: 16vh 6vw 12vh;
+  max-width: 1500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hero-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 80px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hero-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hero-meta-block span:first-child { color: var(--accent); }
+
+.hero-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(56px, 9vw, 140px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-bottom: 32px;
+  font-variation-settings: "opsz" 144;
+}
+.hero-title em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+.hero-subtitle {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: clamp(20px, 2.4vw, 30px);
+  font-weight: 300;
+  color: var(--ink);
+  max-width: 760px;
+  margin-bottom: 60px;
+  line-height: 1.5;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--line-strong);
+}
+.hero-stat {
+  padding: 28px 20px 28px 0;
+  border-right: 1px solid var(--line);
+}
+.hero-stat:last-child { border-right: none; }
+.hero-stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.hero-stat-value {
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink);
+}
+.hero-stat-value .unit {
+  font-size: 14px;
+  color: var(--muted);
+  margin-left: 6px;
+  font-weight: 300;
+}
+
+/* ─── Section base ─────────────────────────── */
+.section {
+  position: relative;
+  z-index: 2;
+  padding: 14vh 6vw;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+.section-header {
+  display: grid;
+  grid-template-columns: 1fr 2.4fr;
+  gap: 60px;
+  margin-bottom: 50px;
+  align-items: start;
+}
+.section-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  border-top: 1px solid var(--line-strong);
+  padding-top: 14px;
+}
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(34px, 5vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.section-title em {
+  font-style: italic;
+  color: var(--accent);
+}
+.section-content {
+  max-width: 860px;
+  margin-left: auto;
+  padding: 28px 30px;
+  background: rgba(5, 6, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.lead {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+.section-content p {
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: var(--ink);
+  line-height: 1.75;
+}
+.section-content p strong {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* Lesson mapping table */
+.lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+.lesson-card {
+  background: rgba(232, 230, 224, 0.06);
+  border: 1px solid var(--line-strong);
+  padding: 26px;
+  border-radius: 6px;
+}
+.lesson-card .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.lesson-card .name {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.lesson-card .desc {
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* Pipeline blocks */
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+  margin-top: 32px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pipeline-step {
+  padding: 24px;
+  border-right: 1px solid var(--line-strong);
+  background: rgba(232, 230, 224, 0.04);
+}
+.pipeline-step:last-child { border-right: none; }
+.pipeline-step .step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.pipeline-step .step-name {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.pipeline-step .step-detail {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* Feature list (procedural materials etc) */
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 28px;
+}
+.feature-item {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 28px;
+  padding: 22px 0;
+  border-top: 1px solid var(--line-strong);
+  align-items: baseline;
+}
+.feature-item .key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.feature-item .val {
+  font-size: 17px;
+  color: var(--ink);
+  line-height: 1.65;
+}
+.feature-item .val strong { color: var(--gold); font-weight: 600; }
+
+/* Big render reveal */
+.render-frame {
+  margin-top: 40px;
+  padding: 14px;
+  background: rgba(232,230,224,0.04);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.render-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+}
+.render-caption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Code preview */
+.code {
+  background: rgba(8, 9, 18, 0.92);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 24px 26px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  overflow-x: auto;
+  margin-top: 24px;
+}
+.code .kw  { color: #c792ea; }
+.code .fn  { color: var(--blue); }
+.code .str { color: #c3e88d; }
+.code .num { color: var(--gold); }
+.code .com { color: var(--muted); font-style: italic; }
+
+/* Pull quote */
+.pullquote {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: clamp(24px, 3.4vw, 38px);
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--accent);
+  padding: 30px 0 30px 32px;
+  border-left: 2px solid var(--accent);
+  margin: 50px 0;
+  max-width: 900px;
+}
+
+/* Final / thanks */
+.thanks {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 10vh 6vw;
+  position: relative;
+  z-index: 2;
+}
+.thanks-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(48px, 8vw, 108px);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.thanks-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Footer link */
+.footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* Responsive */
+@media (max-width: 760px) {
+  .section-header { grid-template-columns: 1fr; gap: 24px; }
+  .section-content { margin-left: 0; }
+  .hero-meta { flex-direction: column; gap: 20px; }
+  .feature-item { grid-template-columns: 1fr; gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div class="progress" id="progress"></div>
+
+<div class="lang-switch">
+  <button data-set="en" class="active">EN</button>
+  <button data-set="tr">TR</button>
+</div>
+
+<!-- ───────────────── HERO ───────────────── -->
+<header class="hero">
+  <div class="hero-meta">
+    <div class="hero-meta-block">
+      <span>Final Project / 2026</span>
+      <span class="lang-en">3D Graphics — WSB Merito Wrocław</span>
+      <span class="lang-tr">3D Grafik — WSB Merito Wrocław</span>
+    </div>
+    <div class="hero-meta-block">
+      <span>Author</span>
+      <span>Kaan Yazıcıoğlu / SD1 / 97364</span>
+    </div>
+  </div>
+
+  <h1 class="hero-title">
+    <span class="lang-en">Procedural<br>Solar <em>System</em></span>
+    <span class="lang-tr">Prosedürel<br>Güneş <em>Sistemi</em></span>
+  </h1>
+
+  <p class="hero-subtitle">
+    <span class="lang-en">A single Python script that builds the Sun, six planets, an asteroid belt, and a star field — entirely from code, inside Blender.</span>
+    <span class="lang-tr">Tek bir Python script'i — Güneş'i, altı gezegeni, asteroid kuşağını ve yıldız tarlasını sıfırdan kodla, Blender'ın içinde kurar.</span>
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-label">
+        <span class="lang-en">Script size</span>
+        <span class="lang-tr">Script boyutu</span>
+      </div>
+      <div class="hero-stat-value">911<span class="unit">lines</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">
+        <span class="lang-en">Planets</span>
+        <span class="lang-tr">Gezegen</span>
+      </div>
+      <div class="hero-stat-value">6<span class="unit">+ sun</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">
+        <span class="lang-en">Asteroids</span>
+        <span class="lang-tr">Asteroid</span>
+      </div>
+      <div class="hero-stat-value">280<span class="unit">rocks</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">
+        <span class="lang-en">External assets</span>
+        <span class="lang-tr">Dış varlık</span>
+      </div>
+      <div class="hero-stat-value">0<span class="unit">files</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ───────────────── 01 — CONCEPT ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">01 / Concept</div>
+    <h2 class="section-title">
+      <span class="lang-en">3D, but <em>scripted</em>.</span>
+      <span class="lang-tr">3D, ama <em>script ile</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p class="lead">
+      <span class="lang-en">Nothing in the scene is modelled by hand. Every sphere, every material node, every keyframe and the entire star-field background is created by Python calls into Blender's <strong>bpy</strong> API.</span>
+      <span class="lang-tr">Sahnede hiçbir şey elle modellenmedi. Her küre, her materyal node'u, her keyframe ve tüm yıldız arka planı — hepsi Python kodunun Blender'ın <strong>bpy</strong> API'sine yaptığı çağrılardan doğdu.</span>
+    </p>
+    <p>
+      <span class="lang-en">Running the script clears the scene and rebuilds it from zero — the same input produces the same output, every time.</span>
+      <span class="lang-tr">Script çalıştığında sahne sıfırlanır ve sıfırdan kurulur — aynı input her seferinde aynı output'u verir.</span>
+    </p>
+    <div class="pullquote">
+      <span class="lang-en">3D content authoring can be written, not clicked.</span>
+      <span class="lang-tr">3D içerik yazılabilir, sadece tıklanmaz.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 02 — COURSE MAPPING ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">02 / Course mapping</div>
+    <h2 class="section-title">
+      <span class="lang-en">Every lesson, <em>in one place</em>.</span>
+      <span class="lang-tr">Tüm dersler, <em>tek projede</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p class="lead">
+      <span class="lang-en">The project consciously uses something from every earlier lesson of the course.</span>
+      <span class="lang-tr">Proje, kursun her bir önceki dersinden bir konuyu bilerek kullanıyor.</span>
+    </p>
+
+    <div class="lesson-grid">
+      <div class="lesson-card">
+        <div class="num">Lesson 2</div>
+        <div class="name">
+          <span class="lang-en">Transformations</span>
+          <span class="lang-tr">Dönüşümler</span>
+        </div>
+        <div class="desc">
+          <span class="lang-en">Planets parented to orbit-pivot empties, rotated around the Z axis on keyframes.</span>
+          <span class="lang-tr">Gezegenler orbit-pivot empty'lere parent edildi, Z ekseni etrafında keyframe ile döner.</span>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <div class="num">Lesson 3</div>
+        <div class="name">
+          <span class="lang-en">Materials &amp; Lighting</span>
+          <span class="lang-tr">Materyal &amp; Işık</span>
+        </div>
+        <div class="desc">
+          <span class="lang-en">Emission shader on the Sun, Principled BSDF on planets, single point light at the origin.</span>
+          <span class="lang-tr">Güneş'te emission shader, gezegenlerde Principled BSDF, merkezde tek nokta ışık.</span>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <div class="num">Lesson 4</div>
+        <div class="name">
+          <span class="lang-en">Procedural Mesh</span>
+          <span class="lang-tr">Prosedürel Mesh</span>
+        </div>
+        <div class="desc">
+          <span class="lang-en">UV-spheres for the bodies, a torus for Saturn's ring, instanced ico-spheres for asteroids.</span>
+          <span class="lang-tr">Gezegenler için UV-sphere, Saturn halkası için torus, asteroidler için instance'lanmış ico-sphere'ler.</span>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <div class="num">Lesson 5</div>
+        <div class="name">
+          <span class="lang-en">Blender + Python</span>
+          <span class="lang-tr">Blender + Python</span>
+        </div>
+        <div class="desc">
+          <span class="lang-en">Whole project lives inside Blender's <code>bpy</code> module — no other dependencies.</span>
+          <span class="lang-tr">Tüm proje Blender'ın <code>bpy</code> modülü içinde yaşar — başka bağımlılık yok.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 03 — PIPELINE ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">03 / Pipeline</div>
+    <h2 class="section-title">
+      <span class="lang-en">Five steps, <em>top to bottom</em>.</span>
+      <span class="lang-tr">Beş adım, <em>baştan sona</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p>
+      <span class="lang-en">The <code>main()</code> function reads top to bottom. Each step adds one piece of the scene.</span>
+      <span class="lang-tr"><code>main()</code> fonksiyonu baştan sona okunur. Her adım sahneye bir parça ekler.</span>
+    </p>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-num">01</div>
+        <div class="step-name">
+          <span class="lang-en">Clear</span>
+          <span class="lang-tr">Temizle</span>
+        </div>
+        <div class="step-detail">
+          <span class="lang-en">Wipe leftover objects, meshes, materials.</span>
+          <span class="lang-tr">Eski obje, mesh, materyal silinir.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">02</div>
+        <div class="step-name">
+          <span class="lang-en">Build</span>
+          <span class="lang-tr">İnşa et</span>
+        </div>
+        <div class="step-detail">
+          <span class="lang-en">Sun, planets, Saturn ring, asteroid belt.</span>
+          <span class="lang-tr">Güneş, gezegenler, halka, asteroid kuşağı.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">03</div>
+        <div class="step-name">
+          <span class="lang-en">Animate</span>
+          <span class="lang-tr">Animasyon</span>
+        </div>
+        <div class="step-detail">
+          <span class="lang-en">Orbit keyframes on each pivot empty.</span>
+          <span class="lang-tr">Her pivot'a orbit keyframe.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">04</div>
+        <div class="step-name">
+          <span class="lang-en">Light &amp; Frame</span>
+          <span class="lang-tr">Işık &amp; Kamera</span>
+        </div>
+        <div class="step-detail">
+          <span class="lang-en">Point light at sun, cinematic camera.</span>
+          <span class="lang-tr">Merkezde nokta ışık, sinematik kamera.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">05</div>
+        <div class="step-name">
+          <span class="lang-en">Render</span>
+          <span class="lang-tr">Render</span>
+        </div>
+        <div class="step-detail">
+          <span class="lang-en">One call writes <code>render.png</code>.</span>
+          <span class="lang-tr">Tek çağrı <code>render.png</code> üretir.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 04 — PROCEDURAL MATERIALS ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">04 / Procedural materials</div>
+    <h2 class="section-title">
+      <span class="lang-en">Each planet, <em>its own shader</em>.</span>
+      <span class="lang-tr">Her gezegen, <em>kendi shader'ı</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p>
+      <span class="lang-en">No image textures are loaded from disk. Every planet's surface is generated by combining Blender's built-in procedural noise nodes.</span>
+      <span class="lang-tr">Diskten hiçbir image texture yüklenmiyor. Her gezegenin yüzeyi Blender'ın hazır procedural noise node'larından oluşturuluyor.</span>
+    </p>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="key">Mercury &amp; Mars</div>
+        <div class="val">
+          <span class="lang-en">Voronoi-based <strong>crater pattern</strong> driving a bump map, noise-driven colour variation.</span>
+          <span class="lang-tr">Voronoi tabanlı <strong>krater deseni</strong> bump map'i sürer, noise renk varyasyonu ekler.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Venus</div>
+        <div class="val">
+          <span class="lang-en">Two layered noise textures produce <strong>cloud-like swirls</strong> on a smooth cream surface.</span>
+          <span class="lang-tr">İki katmanlı noise <strong>bulutsu swirl</strong> deseni, pürüzsüz krem yüzey.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Earth</div>
+        <div class="val">
+          <span class="lang-en">Noise-thresholded <strong>continent mask</strong> mixes ocean blue with land green, plus polar ice caps from Z-coordinate.</span>
+          <span class="lang-tr">Threshold uygulanmış <strong>kıta mask'i</strong> okyanus mavisi ile kara yeşilini karıştırır, Z koordinatından kutup buzulları gelir.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Jupiter &amp; Saturn</div>
+        <div class="val">
+          <span class="lang-en"><strong>Wave texture</strong> driven by the Z axis creates horizontal bands, distorted by noise for the wavy gas-giant look.</span>
+          <span class="lang-tr"><strong>Wave texture</strong> Z ekseninde yatay bantlar üretir, noise distortion ile gaz devine özgü dalgalı görünüm.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Sun</div>
+        <div class="val">
+          <span class="lang-en">Emission shader with noise-driven brightness variation — gives the surface a subtle <strong>sunspot</strong> feel.</span>
+          <span class="lang-tr">Noise ile parlaklık varyasyonlu emission shader — yüzeye <strong>güneş lekesi</strong> hissi verir.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 05 — EXTRAS ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">05 / Beyond the planets</div>
+    <h2 class="section-title">
+      <span class="lang-en">Ring, belt and <em>a sky full of stars</em>.</span>
+      <span class="lang-tr">Halka, kuşak ve <em>yıldız dolu bir gökyüzü</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="key">Saturn ring</div>
+        <div class="val">
+          <span class="lang-en">A flattened torus parented to Saturn, tilted ~18° for a realistic look.</span>
+          <span class="lang-tr">Saturn'e parent'lanmış yassı bir torus, gerçekçi görünüm için ~18° eğik.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Asteroid belt</div>
+        <div class="val">
+          <span class="lang-en"><strong>280 ico-sphere instances</strong> sharing one mesh, distributed in a ring between Mars and Jupiter. Each has random size, rotation, and a slight non-uniform scale so they read as rocks, not spheres.</span>
+          <span class="lang-tr"><strong>280 ico-sphere instance'ı</strong> tek bir mesh'i paylaşır, Mars ve Jupiter arasında halkada dağılmış. Her biri rastgele boyut, rotasyon ve hafif non-uniform scale ile — küre değil kaya gibi görünür.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">Star field</div>
+        <div class="val">
+          <span class="lang-en">Procedural world shader: <strong>Voronoi F1 distance</strong> with a tight threshold creates randomly distributed pinpoint stars — no image file involved.</span>
+          <span class="lang-tr">Procedural world shader: <strong>Voronoi F1 mesafesi</strong> sıkı bir threshold ile, rastgele dağılmış yıldız noktaları üretir — image dosyası yok.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 06 — TUNABLE ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">06 / Tunable</div>
+    <h2 class="section-title">
+      <span class="lang-en">All knobs <em>at the top of the file</em>.</span>
+      <span class="lang-tr">Tüm ayarlar <em>dosyanın başında</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p>
+      <span class="lang-en">Want a different solar system? Edit a few constants at the top of <code>solar_system.py</code> and run again. No further changes needed.</span>
+      <span class="lang-tr">Farklı bir güneş sistemi mi istiyorsun? <code>solar_system.py</code>'nin başındaki birkaç sabiti değiştir ve tekrar çalıştır. Başka değişiklik gerekmez.</span>
+    </p>
+    <pre class="code"><span class="com"># Each planet: (name, radius, distance, color, period, material_type, style)</span>
+<span class="kw">PLANETS</span> = [
+    (<span class="str">"Mercury"</span>, <span class="num">0.40</span>,  <span class="num">4.0</span>, (<span class="num">0.50</span>, <span class="num">0.45</span>, <span class="num">0.40</span>),  <span class="num">60</span>, <span class="str">"rocky"</span>,     {<span class="str">"voronoi_scale"</span>: <span class="num">11.0</span>}),
+    (<span class="str">"Venus"</span>,   <span class="num">0.62</span>,  <span class="num">6.2</span>, (<span class="num">0.95</span>, <span class="num">0.78</span>, <span class="num">0.35</span>),  <span class="num">90</span>, <span class="str">"venus"</span>,     {}),
+    (<span class="str">"Earth"</span>,   <span class="num">0.70</span>,  <span class="num">8.7</span>, (<span class="num">0.10</span>, <span class="num">0.30</span>, <span class="num">0.60</span>), <span class="num">120</span>, <span class="str">"earth"</span>,     {}),
+    (<span class="str">"Mars"</span>,    <span class="num">0.55</span>, <span class="num">11.2</span>, (<span class="num">0.78</span>, <span class="num">0.32</span>, <span class="num">0.18</span>), <span class="num">165</span>, <span class="str">"rocky"</span>,     {<span class="str">"voronoi_scale"</span>: <span class="num">7.0</span>}),
+    (<span class="str">"Jupiter"</span>, <span class="num">1.45</span>, <span class="num">15.5</span>, (<span class="num">0.80</span>, <span class="num">0.62</span>, <span class="num">0.45</span>), <span class="num">230</span>, <span class="str">"gas_giant"</span>, {<span class="str">"band_scale"</span>: <span class="num">6.0</span>}),
+    (<span class="str">"Saturn"</span>,  <span class="num">1.20</span>, <span class="num">19.5</span>, (<span class="num">0.92</span>, <span class="num">0.80</span>, <span class="num">0.55</span>), <span class="num">290</span>, <span class="str">"gas_giant"</span>, {<span class="str">"band_scale"</span>: <span class="num">3.0</span>}),
+]</pre>
+  </div>
+</section>
+
+<!-- ───────────────── 07 — RESULT ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">07 / Result</div>
+    <h2 class="section-title">
+      <span class="lang-en">One run, <em>one render</em>.</span>
+      <span class="lang-tr">Bir çalıştırma, <em>bir render</em>.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <p class="lead">
+      <span class="lang-en">The script ends with a single <code>bpy.ops.render.render()</code> call. Below is the actual output saved next to the script as <code>render.png</code>.</span>
+      <span class="lang-tr">Script tek bir <code>bpy.ops.render.render()</code> çağrısıyla biter. Aşağıda script'in yanına <code>render.png</code> olarak yazılan gerçek çıktı.</span>
+    </p>
+
+    <div class="render-frame">
+      <img src="render.png" alt="Procedural Solar System render">
+      <div class="render-caption">
+        <span>solar_system.py → render.png</span>
+        <span>1600 × 900 / Eevee Next</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── 08 — DELIVERY ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">08 / Delivery</div>
+    <h2 class="section-title">
+      <span class="lang-en">What's in the <em>zip</em>.</span>
+      <span class="lang-tr"><em>Zip</em>'in içinde ne var.</span>
+    </h2>
+  </div>
+  <div class="section-content">
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="key">solar_system.py</div>
+        <div class="val">
+          <span class="lang-en">The script — single file, ~900 lines, only depends on <code>bpy</code>.</span>
+          <span class="lang-tr">Script'in kendisi — tek dosya, ~900 satır, yalnızca <code>bpy</code>'ye bağımlı.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">presentation.html</div>
+        <div class="val">
+          <span class="lang-en">This presentation, self-contained, opens in any browser.</span>
+          <span class="lang-tr">Bu sunum, kendi içinde tam, her tarayıcıda açılır.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">render.png</div>
+        <div class="val">
+          <span class="lang-en">Sample render produced by the script.</span>
+          <span class="lang-tr">Script'in ürettiği örnek render.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="key">README.md</div>
+        <div class="val">
+          <span class="lang-en">Short run instructions for Blender.</span>
+          <span class="lang-tr">Blender için kısa çalıştırma talimatları.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── THANKS ───────────────── -->
+<section class="thanks">
+  <div class="thanks-title">
+    <span class="lang-en">Thank you.</span>
+    <span class="lang-tr">Teşekkürler.</span>
+  </div>
+  <div class="thanks-sub">
+    <span class="lang-en">Questions? — Kaan Yazıcıoğlu / SD1 / 97364</span>
+    <span class="lang-tr">Sorular? — Kaan Yazıcıoğlu / SD1 / 97364</span>
+  </div>
+</section>
+
+<div class="footer">
+  github.com/kaanzapkinus/3dgraphics &nbsp;·&nbsp;
+  <a href="https://github.com/kaanzapkinus/3dgraphics" target="_blank">View repo</a>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// ─── language switcher ─────────────────────────────
+// Important: update the SAME element the CSS keys off (html / documentElement),
+// otherwise both languages can match the [data-lang] descendant selectors and
+// both get hidden.
+const buttons = document.querySelectorAll('.lang-switch button');
+buttons.forEach(btn => btn.addEventListener('click', () => {
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.documentElement.dataset.lang = btn.dataset.set;
+  document.documentElement.lang = btn.dataset.set;
+}));
+
+// ─── progress bar ─────────────────────────────────
+const progress = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const max = document.body.scrollHeight - window.innerHeight;
+  progress.style.width = (window.scrollY / max * 100) + '%';
+}, { passive: true });
+
+// ─── three.js solar system ─────────────────────────
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.set(0, 16, 40);
+camera.lookAt(0, 0, 0);
+
+// Star field (lots of small points)
+function makeStars(count, spread) {
+  const geom = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const r  = spread * (0.5 + Math.random() * 0.5);
+    const u  = Math.random();
+    const v  = Math.random();
+    const theta = 2 * Math.PI * u;
+    const phi   = Math.acos(2 * v - 1);
+    pos[i*3+0] = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, sizeAttenuation: true, transparent: true, opacity: 0.85 });
+  return new THREE.Points(geom, mat);
+}
+scene.add(makeStars(1800, 600));
+
+// Sun — procedural shader with sunspot pattern + rim glow
+const sunMaterial = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: `
+    varying vec3 vPos;
+    varying vec3 vNormal;
+    void main() {
+      vPos = position;
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    varying vec3 vPos;
+    varying vec3 vNormal;
+
+    float hash(vec3 p) {
+      p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+      p += dot(p.zxy, p.yxz + 19.27);
+      return fract(p.x * p.y * p.z);
+    }
+    float noise(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+            mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+            mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+        f.z);
+    }
+    float fbm(vec3 p) {
+      float v = 0.0;
+      float a = 0.5;
+      for (int k = 0; k < 4; k++) { v += a * noise(p); p *= 2.0; a *= 0.5; }
+      return v;
+    }
+
+    void main() {
+      vec3 p = vPos * 1.4 + vec3(uTime * 0.05);
+      float n = fbm(p);
+      float spots = smoothstep(0.45, 0.65, fbm(vPos * 3.0 + vec3(uTime * 0.02)));
+
+      vec3 hot  = vec3(1.00, 0.95, 0.55);
+      vec3 warm = vec3(1.00, 0.50, 0.08);
+      vec3 cool = vec3(0.85, 0.25, 0.04);
+
+      vec3 col = mix(warm, hot, n);
+      col = mix(col, cool, spots * 0.35);
+
+      // Rim glow
+      vec3 viewDir = normalize(cameraPosition - vPos);
+      float rim = pow(1.0 - max(0.0, dot(vNormal, viewDir)), 1.6);
+      col += vec3(1.0, 0.55, 0.18) * rim * 0.55;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+});
+const sun = new THREE.Mesh(new THREE.SphereGeometry(2.6, 64, 48), sunMaterial);
+scene.add(sun);
+
+// Multi-layer corona / glow
+function makeHalo(radius, color, opacity) {
+  return new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 32, 24),
+    new THREE.MeshBasicMaterial({
+      color: color, transparent: true, opacity: opacity,
+      side: THREE.BackSide, depthWrite: false,
+    })
+  );
+}
+const halo1 = makeHalo(3.05, 0xffb347, 0.32);
+const halo2 = makeHalo(3.8,  0xff7733, 0.16);
+const halo3 = makeHalo(5.2,  0xff4422, 0.07);
+const halo4 = makeHalo(7.0,  0xff2211, 0.03);
+scene.add(halo1, halo2, halo3, halo4);
+const halo = halo1; // pulse target (kept for legacy reference)
+
+// Light
+const sunLight = new THREE.PointLight(0xfff1d5, 5, 200, 1.2);
+sunLight.position.set(0, 0, 0);
+scene.add(sunLight);
+scene.add(new THREE.AmbientLight(0x404868, 0.4));
+
+// Planets
+const PLANETS = [
+  { name: 'Mercury', r: 0.40, d:  4.0, color: 0x807268, period: 6.0  },
+  { name: 'Venus',   r: 0.62, d:  6.2, color: 0xf2c659, period: 9.0  },
+  { name: 'Earth',   r: 0.70, d:  8.7, color: 0x1f6fc7, period: 12.0 },
+  { name: 'Mars',    r: 0.55, d: 11.2, color: 0xc55530, period: 16.5 },
+  { name: 'Jupiter', r: 1.45, d: 15.5, color: 0xc99e6f, period: 23.0 },
+  { name: 'Saturn',  r: 1.20, d: 19.5, color: 0xe5c684, period: 29.0 },
+];
+
+const planetMeshes = PLANETS.map((p, i) => {
+  const pivot = new THREE.Object3D();
+  scene.add(pivot);
+  // Use emissive ≈ 35% of base colour so the planet stays clearly
+  // visible against the dark sky even on its shaded side.
+  const base = new THREE.Color(p.color);
+  const emissive = base.clone().multiplyScalar(0.45);
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(p.r, 32, 24),
+    new THREE.MeshStandardMaterial({
+      color: p.color,
+      roughness: 0.55,
+      metalness: 0.0,
+      emissive: emissive,
+      emissiveIntensity: 1.0,
+    })
+  );
+  mesh.position.x = p.d;
+  pivot.add(mesh);
+  // Orbit guide ring (subtle)
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(p.d - 0.01, p.d + 0.01, 128),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.10, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  scene.add(ring);
+  // Random starting orbit angle
+  pivot.rotation.y = Math.random() * Math.PI * 2;
+  return { pivot, mesh, period: p.period };
+});
+
+// Saturn rings — prominent, two bands separated by a Cassini-style gap
+const saturn = planetMeshes[5];
+
+const ringTilt = Math.PI / 2 - 0.45;  // ~26° tilt so it reads from the side
+
+// Inner ring — darker, narrower
+const saturnRingInner = new THREE.Mesh(
+  new THREE.RingGeometry(1.55, 1.95, 96),
+  new THREE.MeshBasicMaterial({
+    color: 0xc9a06a,
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  })
+);
+saturnRingInner.rotation.x = ringTilt;
+saturn.mesh.add(saturnRingInner);
+
+// Outer ring — brighter, wider (the famous A-ring look)
+const saturnRingOuter = new THREE.Mesh(
+  new THREE.RingGeometry(2.10, 2.95, 96),
+  new THREE.MeshBasicMaterial({
+    color: 0xeacf94,
+    transparent: true,
+    opacity: 0.85,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  })
+);
+saturnRingOuter.rotation.x = ringTilt;
+saturn.mesh.add(saturnRingOuter);
+
+// Faint outermost dust ring for depth
+const saturnRingDust = new THREE.Mesh(
+  new THREE.RingGeometry(3.00, 3.35, 96),
+  new THREE.MeshBasicMaterial({
+    color: 0xd4ad77,
+    transparent: true,
+    opacity: 0.25,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  })
+);
+saturnRingDust.rotation.x = ringTilt;
+saturn.mesh.add(saturnRingDust);
+
+// Asteroid belt (between Mars and Jupiter)
+function makeAsteroidBelt(count) {
+  const geom = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const innerR = 12.5, outerR = 14.2, h = 0.18;
+  for (let i = 0; i < count; i++) {
+    const a  = Math.random() * Math.PI * 2;
+    const r  = innerR + Math.random() * (outerR - innerR);
+    pos[i*3+0] = Math.cos(a) * r;
+    pos[i*3+1] = (Math.random() - 0.5) * h;
+    pos[i*3+2] = Math.sin(a) * r;
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xbfb09a, size: 0.16, sizeAttenuation: true });
+  return new THREE.Points(geom, mat);
+}
+const beltPivot = new THREE.Object3D();
+scene.add(beltPivot);
+beltPivot.add(makeAsteroidBelt(280));
+
+// Camera target — animated by scroll
+const camTargets = [
+  { y: 16, z: 40, lookY: 0 },   // hero
+  { y: 12, z: 35, lookY: 0 },   // concept
+  { y: 18, z: 42, lookY: 1 },   // course mapping
+  { y: 22, z: 36, lookY: 2 },   // pipeline
+  { y: 10, z: 30, lookY: 0 },   // materials (close-in)
+  { y: 14, z: 48, lookY: 0 },   // extras (zoom out — show belt)
+  { y: 16, z: 35, lookY: 0 },   // tunable
+  { y: 8,  z: 28, lookY: 0 },   // result
+  { y: 18, z: 42, lookY: 0 },   // delivery
+  { y: 24, z: 50, lookY: 4 },   // thanks (high & wide)
+];
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function updateCameraFromScroll() {
+  const sections = document.querySelectorAll('.section, .hero, .thanks');
+  const total = document.body.scrollHeight - window.innerHeight;
+  const t = Math.max(0, Math.min(1, window.scrollY / total));
+  const idx = t * (camTargets.length - 1);
+  const i = Math.floor(idx);
+  const f = idx - i;
+  const a = camTargets[i];
+  const b = camTargets[Math.min(i + 1, camTargets.length - 1)];
+  const yPos    = lerp(a.y, b.y, f);
+  const zPos    = lerp(a.z, b.z, f);
+  const lookY   = lerp(a.lookY, b.lookY, f);
+  // Smooth camera move
+  camera.position.x = Math.sin(t * Math.PI * 0.6) * 6;
+  camera.position.y = yPos;
+  camera.position.z = zPos;
+  camera.lookAt(0, lookY, 0);
+}
+window.addEventListener('scroll', updateCameraFromScroll, { passive: true });
+updateCameraFromScroll();
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Animation loop
+const clock = new THREE.Clock();
+function loop() {
+  const dt = clock.getDelta();
+  const t  = clock.getElapsedTime();
+  // Feed time into the sun shader for animated surface noise
+  sunMaterial.uniforms.uTime.value = t;
+  // Orbit planets
+  for (const { pivot, period } of planetMeshes) {
+    pivot.rotation.y += (Math.PI * 2 / period) * dt * 0.4;
+  }
+  // Belt slow rotation
+  beltPivot.rotation.y += dt * 0.05;
+  // Subtle pulse on the innermost halo
+  halo1.scale.setScalar(1 + Math.sin(t * 1.4) * 0.03);
+  halo3.scale.setScalar(1 + Math.cos(t * 0.8) * 0.02);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>

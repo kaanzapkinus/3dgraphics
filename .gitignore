@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 .DS_Store
 .claude/
+
+# Development helpers — not part of the deliverables
+final_project/_*.py
+final_project/frames/
+final_project/qa/
+*.pdf
+qa_slide_*.jpg
