@@ -11,3 +11,6 @@ final_project/frames/
 final_project/qa/
 *.pdf
 qa_slide_*.jpg
+
+# Local-only project notes (handover for new Claude sessions)
+CLAUDE.md
